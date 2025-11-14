@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+
+    <script>
+        async function Register(event) {
+            event.preventDefault();
+
+            const Username = document.getElementById("Username").value;
+            const Password = document.getElementById("Password").value;
+            const ProfilePicture = document.getElementById("ProfilePicture").files[0];
+
+            const formData = new FormData();
+            formData.append("Username", Username);
+            formData.append("Password", Password);
+            formData.append("ProfilePicture", ProfilePicture);
+
+            const response = await fetch("/registerUser", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            alert(result.message);
+        }
+    </script>
+</head>
+<body>
+    <main>
+        <h1>Create a user!</h1>
+        <form onsubmit="Register(event)" autocomplete="off">
+            
+            <label for="Username">Username:</label>
+            <input type="text" id="Username" name="Username" required><br>
+
+            <label for="Password">Password:</label>
+            <input type="password" id="Password" name="Password" required><br>
+
+            <label for="ProfilePicture">Profile Picture:</label>
+            <input type="file" id="ProfilePicture" name="ProfilePicture"><br>
+
+            <button type="submit">Create user</button>
+        </form>
+        <p> Allready have a user? <a href="login.html">>Login<</a></p>
+    </main>
+</body>
+</html>

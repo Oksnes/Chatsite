@@ -1,0 +1,85 @@
+html, body {
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgb(61, 52, 65);
+}
+
+main {
+    height: 60%;
+    width: 50%;
+    background: rgb(88, 77, 91);
+    text-align: center;
+    filter: drop-shadow(10px 10px rgb(72, 62, 76));
+    border-radius: 5%;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    padding: 25px;
+}
+
+#header {
+    align-items: start;
+    color: white;
+}
+
+a {
+    color: rgb(82, 118, 164);
+}
+
+nav {
+    height: 80%;
+    display: flex;
+    /* justify-content: center; */
+    flex-direction: column-reverse;
+    /* align-items: center; */
+    justify-content: end;
+    
+} 
+form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+input{
+    width: 50%;
+    background: rgb(128, 102, 145);
+    border: 2px solid rgb(65, 65, 65);
+    border-radius:5px;
+    margin-bottom: 10px;
+    color:white;
+}
+
+input[type="file"] {
+    width: 30%;
+    padding: 5px;
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    width: 50%;
+    padding: 5px;
+    cursor: pointer;
+    background: rgb(128, 102, 145);
+    color:white;
+}
+
+label {
+    color:white;
+}
+
+button {
+    width: 50%;
+    background: rgb(128, 102, 145);
+    border: 2px solid rgb(65, 65, 65);
+    border-radius:5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    color:white;
+}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+    <script>
+        async function login(event) {
+            event.preventDefault();
+
+            const Username = document.getElementById("Username").value;
+            const Password = document.getElementById("Password").value;
+
+            const response = await fetch("/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ Username, Password })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                window.location.href = `/chat`; // Omdiriger til chat-siden
+            } else {
+                alert(result.message);
+            }
+        }
+
+        async function loggUt() {
+            const response = await fetch("/logout", {
+                method: "POST"
+            });
+
+            if (response.ok) {
+                alert("You are now logged out.");
+                window.location.href = "/login.html"; // Omdiriger til login-siden
+            } else {
+                alert("Something went wrong while logging out.");
+            }
+        }
+    </script>
+
+
+</head>
+<body>
+    <main>
+        <h1>Login</h1>
+        <form onsubmit="login(event)" autocomplete="off">
+            <label for="Username">Username:</label>
+            <input type="text" id="Username" name="Username" required><br>
+
+            <label for="Password">Password:</label>
+            <input type="password" id="Password" name="Password" required><br>
+
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have a account? <a href="/register.html">Register here.</a>.</p>
+    </main>
+</body>
+</html>

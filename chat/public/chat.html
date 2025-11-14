@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="chat.css">
+    <script src="chat.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+
+</head>
+<body>
+    <nav>
+        <div id="channel-container"> <!--Laget med hjelp fra Jo-Bjørnar V2-->
+            <select id="channel-select"></select>
+            <!-- <input id="new-channel-input" type="text" placeholder="New channel name"> -->
+            <button id="create-channel-button">Create Channel</button><!-- Bare her siden den ødeleges uten-->
+        </div>
+    </nav>
+    <main>
+        <div id="chat-container">
+            <div id="messages-container"></div>
+            <form autocomplete="off" id="chat-form">
+                <label for="image-input" class="btn"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M200-120q-33 0-56.5-23.5T120-200v-400q0-33 23.5-56.5T200-680h160v80H200v400h560v-400H600v-80h160q33 0 56.5 23.5T840-600v400q0 33-23.5 56.5T760-120H200Zm280-200L320-480l56-56 64 63v-487h80v487l64-63 56 56-160 160Z"/></svg></label>
+                <input id="image-input" type="file" style="display:none;" accept="image/*">
+
+                <input id="message-input" type="text" placeholder="Write message..." required>
+                <button id="send-button" type="submit"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><path d="M383-480 200-664l56-56 240 240-240 240-56-56 183-184Zm264 0L464-664l56-56 240 240-240 240-56-56 183-184Z"/></svg></button>
+            </form>
+        </div>
+    </main>
+    <div id="users">
+        <h3>Users:</h3>
+        <div id="user-list"></div>
+    </div>
+</body>
+</html>
