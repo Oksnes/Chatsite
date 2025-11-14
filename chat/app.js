@@ -7,8 +7,9 @@ const path = require('path');
 
 const app = express();
 const PORT = 3000;
-const uploadDir = path.join(__dirname, 'public/Images');
 
+
+const uploadDir = path.join(__dirname, 'public/Images');
 // Create uploads directory if it doesn't exist
 const fs = require('fs');
 if (!fs.existsSync(uploadDir)) {

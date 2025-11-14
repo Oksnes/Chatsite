@@ -88,13 +88,6 @@ document.getElementById('send-button').addEventListener('click', async (event) =
   const imageInput = document.getElementById('image-input'); // forventes <input type="file" id="image-input">
   const Content = messageInput.value.trim();
   const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
-    let now = new Date();
-    let Time = now.getFullYear() + "-" +
-    String(now.getMonth() + 1).padStart(2, '0') + "-" +
-    String(now.getDate()).padStart(2, '0') + " " +
-    String(now.getHours()).padStart(2, '0') + ":" +
-    String(now.getMinutes()).padStart(2, '0') + ":" +
-    String(now.getSeconds()).padStart(2, '0');
 
   if (!Content && !imageFile) return; // Unngå å sende tomme meldinger
 
