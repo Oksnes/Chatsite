@@ -48,6 +48,7 @@ async function fetchMessages(currentChannelID) {
             messageContent.textContent = ` ${msg.Content}`;
             messageContent.style.color = 'white';
             messageDiv.append(messageContent);
+            messageDiv.style.overflowWrap = 'break-word';
         }
 
         const timeStamp = document.createElement('div');
@@ -74,6 +75,12 @@ async function fetchMessages(currentChannelID) {
         messagesContainer.append(messageDiv);
         
     });
+
+     // Scroll to bottom after rendering messages
+    const messagesContainerEl = document.getElementById('messages-container');
+    if (messagesContainerEl) {
+        messagesContainerEl.scrollTo({ top: messagesContainerEl.scrollHeight, behavior: 'smooth' });
+    }
 }
 
 document.getElementById('channel-select').addEventListener('change', (e) => {

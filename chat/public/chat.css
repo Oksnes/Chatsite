@@ -56,11 +56,12 @@ main {
 #messages-container {
     max-height: 80%;
     height: 600px;
-    overflow-y: auto;
+    overflow-y:auto;
     margin-bottom: 10px;
     text-align: left;
     padding-left: 10px;
     overflow-anchor:none;
+    scrollbar-color: rgb(66, 93, 121) transparent;
 }
 
 form {
