@@ -204,6 +204,12 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   res.json(Messages);
 });
 
+app.get('/getUsers', (req, res) => {
+  const stmt = db.prepare('SELECT UserID, Username, ProfilePicture FROM User');
+  const Users = stmt.all();
+  res.json(Users);
+});
+
 //åpner port på serveren
 app.listen(PORT, () => {
   console.log(`Serveren kjører på http://localhost:${PORT}`);

@@ -89,31 +89,69 @@ document.getElementById('channel-select').addEventListener('change', (e) => {
 });
 
 document.getElementById('send-button').addEventListener('click', async (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  const messageInput = document.getElementById('message-input');
-  const imageInput = document.getElementById('image-input'); // forventes <input type="file" id="image-input">
-  const Content = messageInput.value.trim();
-  const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
+    const messageInput = document.getElementById('message-input');
+    const imageInput = document.getElementById('image-input'); // forventes <input type="file" id="image-input">
+    const Content = messageInput.value.trim();
+    const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
 
-  if (!Content && !imageFile) return; // Unngå å sende tomme meldinger
+    if (!Content && !imageFile) return; // Unngå å sende tomme meldinger
 
-  const formData = new FormData();
-  if (Content) formData.append('Content', Content);
-  if (imageFile) formData.append('Image', imageFile);
+    const formData = new FormData();
+    if (Content) formData.append('Content', Content);
+    if (imageFile) formData.append('Image', imageFile);
 
-  await fetch(`/Channel/${currentChannelID}/Messages`, {
-      method: 'POST',
-      body: formData
-  });
+    await fetch(`/Channel/${currentChannelID}/Messages`, {
+        method: 'POST',
+        body: formData
+    });
 
-  messageInput.value = '';
-  imageInput.value = '';
-  fetchMessages(currentChannelID);
+    messageInput.value = '';
+    imageInput.value = '';
+    fetchMessages(currentChannelID);
 });
+
+async function fetchUsers() {
+    const response = await fetch('/getUsers');  
+    const Users = await response.json();
+    const userList = document.getElementById('user-list');
+    userList.innerHTML = '';
+    userList.style.display = 'flex';
+    userList.style.flexDirection = 'column';
+    userList.style.gap = '6px';
+
+    Users.forEach(User => {
+
+    const userRow = document.createElement('div');
+    userRow.style.display = 'flex';
+    userRow.style.alignItems = 'center';
+    userRow.style.gap = '8px';
+    userRow.style.padding = '4px 0';
+
+    const profilePic = document.createElement('img');
+    profilePic.src = User.ProfilePicture;
+    profilePic.alt = `${User.Username} Profile Picture`;
+    profilePic.style.width = '32px';
+    profilePic.style.height = '32px';
+    profilePic.style.objectFit = 'cover';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = `(${User.UserID}) ${User.Username}`;
+    nameSpan.style.color = 'white';
+    nameSpan.style.fontFamily = 'Roboto, monospace';
+
+    userRow.append(profilePic, nameSpan);
+    userList.appendChild(userRow);
+    
+    });
+}
+
 
 fetchChannels();
 
 setInterval(() => {
     fetchMessages(currentChannelID);
 }, 5000);
+
+fetchUsers();
