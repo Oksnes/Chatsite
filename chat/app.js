@@ -60,6 +60,14 @@ function requireLogin(req, res, next) {
   next();
 }
 
+function requireAdmin(req, res, next) {
+  if (!req.session.User || Number(req.session.User.Admin) !== 1) {
+      return res.status(403).send("Access denied. Admins only.");
+  }
+  next();
+}
+
+app.use('/secure', requireAdmin, express.static(path.join(__dirname, 'secure')));
 
 
 app.get('/', (req, res) => { //sender deg til index.html som standard.
@@ -132,7 +140,7 @@ app.post ("/login", async (req, res) => {
   }
 
   // Lagre brukerdata i session
-  req.session.User = { id: User.UserID, Username: User.Username }; //gir sessionene din disse dataene
+  req.session.User = { id: User.UserID, Username: User.Username, Admin: Number(User.Admin || 0) }; //gir sessionene din disse dataene
   res.json({ message: "Innlogging vellykket" });
 });
 
@@ -144,9 +152,7 @@ app.post("/logout", (req, res) => { //DENNE KODEN BRUKER JEG IKKE NÅ
 
 // Rute for å vise chat.html eller admin (kun for innlogga brukarar)
 app.get("/chat", requireLogin,(req, res) => { 
-  const UserID = req.session.User.id;
-  const admin = db.prepare('SELECT * FROM User WHERE UserID = ?').get(UserID) // Hent admin-status fra databasen
-  if (admin.Admin == 1) {
+  if (Number(req.session.User?.Admin) === 1) {
     res.sendFile(__dirname + "/secure/admin.html"); // Hvis brukeren er admin, send dem til admin-siden
   } else {
     return res.redirect("/chat.html"); // Ellers send dem til chat-siden
@@ -205,9 +211,27 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
 });
 
 app.get('/getUsers', (req, res) => {
-  const stmt = db.prepare('SELECT UserID, Username, ProfilePicture FROM User');
+  const stmt = db.prepare('SELECT UserID, Username, ProfilePicture FROM User ORDER BY Admin DESC, Username ASC');
   const Users = stmt.all();
   res.json(Users);
+});
+
+app.delete('/admin/deleteUsers/:UserID', (req, res) => {
+  const { UserID } = req.params;
+
+  // Slett meldingene til brukeren
+  const deleteMessagesStmt = db.prepare('DELETE FROM Messages WHERE UserID = ?');
+  deleteMessagesStmt.run(UserID);
+
+  // Slett brukeren
+  const deleteUserStmt = db.prepare('DELETE FROM User WHERE UserID = ?');
+  const result = deleteUserStmt.run(UserID);
+
+  if (result.changes > 0) {
+    res.json({ message: 'User and messages deleted' });
+  } else {
+    res.status(404).json({ message: 'Bruker ikke funnet' });
+  }
 });
 
 //åpner port på serveren

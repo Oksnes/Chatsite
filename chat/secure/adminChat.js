@@ -145,10 +145,51 @@ async function fetchUsers() {
     nameSpan.style.color = 'white';
     nameSpan.style.fontFamily = 'Roboto, monospace';
 
-    userRow.append(profilePic, nameSpan);
+    const deleteButton = document.createElement('button');
+    deleteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="40px" fill="#ffffffff"><path d="M267.33-120q-27.5 0-47.08-19.58-19.58-19.59-19.58-47.09V-740H160v-66.67h192V-840h256v33.33h192V-740h-40.67v553.33q0 27-19.83 46.84Q719.67-120 692.67-120H267.33Zm425.34-620H267.33v553.33h425.34V-740Zm-328 469.33h66.66v-386h-66.66v386Zm164 0h66.66v-386h-66.66v386ZM267.33-740v553.33V-740Z"/></svg>';
+    deleteButton.style.marginLeft = '-10px';
+    deleteButton.style.background = 'none';
+    deleteButton.style.border = 'none';
+    deleteButton.style.cursor = 'pointer';
+    deleteButton.addEventListener('click', () => deleteUser(User.UserID));
+
+    userRow.append(profilePic, nameSpan, deleteButton);
     userList.appendChild(userRow);
     });
 }
+
+async function deleteUser(UserID) {
+  const confirmed = confirm('Er du sikker på at du vil slette denne brukeren?');
+  if (!confirmed) return;
+
+  const response = await fetch(`/admin/deleteUsers/${UserID}`, {
+    method: 'DELETE'
+  });
+
+  if (response.ok) {
+    alert('Bruker og meldinger slettet');
+    fetchUsers();
+    fetchMessages(currentChannelID);
+  } else {
+    const result = await response.json();
+    alert(result.message);
+  }
+}
+
+document.getElementById('create-channel-button').addEventListener('click', async () => {
+  const newChannelInput = document.getElementById('new-channel-input');
+  const ChannelName = newChannelInput.value;
+  await fetch('/Channel', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ChannelName: ChannelName })
+  });
+  newChannelInput.value = '';
+  fetchChannels();
+});
+
 
 
 fetchChannels();
