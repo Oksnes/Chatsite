@@ -1,11 +1,11 @@
 let currentChannelID;
 
-async function fetchChannels() { 
+async function fetchChannels() { //funksjon for å hente kanaler
     const response = await fetch('/Channel')
     const Channels = await response.json();
     const channelSelect = document.getElementById('channel-select');
 
-    channelSelect.innerHTML = ''; // Tøm tidligere kanaler
+    channelSelect.innerHTML = ''; // passer på at den er tom før vi legger til nye options
     Channels.forEach(channel => {
         const option = document.createElement('option');
         option.value = channel.ChannelID;
@@ -87,7 +87,7 @@ async function fetchMessages(currentChannelID, scroll = false) { //scroll parame
     }
 }
 
-document.getElementById('channel-select').addEventListener('change', (e) => {
+document.getElementById('channel-select').addEventListener('change', (e) => { //funksjon for å endre variabelen currentChannelID
     currentChannelID = e.target.value;
     fetchMessages(currentChannelID);
 });

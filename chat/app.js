@@ -36,17 +36,45 @@ const upload = multer({
 
 async function saveImageBuffer(buffer, originalname, opts = {}) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = `Multer-Image-${uniqueSuffix}.webp`;
-    const outPath = path.join(uploadDir, filename);
+    const ext = path.extname(originalname || '').toLowerCase();
 
     // Default resize width and quality, can be overridden via opts
     const width = opts.width || 375;
     const quality = typeof opts.quality === 'number' ? opts.quality : 50;
 
-    await sharp(buffer)
-      .resize({ width, withoutEnlargement: true })
-      .webp({ quality })
-      .toFile(outPath);
+
+        // If original is GIF, save the buffer directly as .gif to preserve animation
+    if (ext === '.gif') {
+        const filename = `Multer-Image-${uniqueSuffix}.gif`;
+        const outPath = path.join(uploadDir, filename);
+        fs.writeFileSync(outPath, buffer);
+        return filename;
+    }
+
+    // Determine output format based on original extension/mimetype.
+    // Keep jpeg/jpg, png and webp when possible; otherwise convert to webp.
+    let format = 'webp';
+    if (ext === '.jpg' || ext === '.jpeg') format = 'jpeg';
+    else if (ext === '.png') format = 'png';
+    else if (ext === '.webp') format = 'webp';
+
+    const outExt = format === 'jpeg' ? 'jpg' : format;
+    const filename = `Multer-Image-${uniqueSuffix}.${outExt}`;
+    const outPath = path.join(uploadDir, filename);
+
+    // Build transformer with resize and format-specific options
+    let transformer = sharp(buffer).resize({ width, withoutEnlargement: true });
+    if (format === 'jpeg') {
+        transformer = transformer.jpeg({ quality });
+    } else if (format === 'png') {
+        // PNG doesn't use 'quality' the same way; use compressionLevel (0-9) derived from quality.
+        const compressionLevel = Math.max(0, Math.min(9, Math.round((100 - quality) / 11)));
+        transformer = transformer.png({ compressionLevel });
+    } else { // webp
+        transformer = transformer.webp({ quality });
+    }
+
+    await transformer.toFile(outPath);
 
     return filename;
 }
@@ -241,18 +269,51 @@ app.get('/getUsers', (req, res) => {
 app.delete('/admin/deleteUsers/:UserID', (req, res) => {
   const { UserID } = req.params;
 
-  // Slett meldingene til brukeren
-  const deleteMessagesStmt = db.prepare('DELETE FROM Messages WHERE UserID = ?');
-  deleteMessagesStmt.run(UserID);
+  try {
+    // Delete images referenced by the user's messages
+    const imagesStmt = db.prepare('SELECT ImagePath FROM Messages WHERE UserID = ? AND ImagePath IS NOT NULL');
+    const images = imagesStmt.all(UserID);
+    images.forEach(row => {
+      if (row && row.ImagePath) {
+        try {
+          const filename = path.basename(row.ImagePath);
+          const filePath = path.join(uploadDir, filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error('Failed to remove message image:', e);
+        }
+      }
+    });
 
-  // Slett brukeren
-  const deleteUserStmt = db.prepare('DELETE FROM User WHERE UserID = ?');
-  const result = deleteUserStmt.run(UserID);
+    // Delete the user's messages
+    const deleteMessagesStmt = db.prepare('DELETE FROM Messages WHERE UserID = ?');
+    deleteMessagesStmt.run(UserID);
 
-  if (result.changes > 0) {
-    res.json({ message: 'User and messages deleted' });
-  } else {
-    res.status(404).json({ message: 'Bruker ikke funnet' });
+    // Delete the user's profile picture (if any)
+    const userStmt = db.prepare('SELECT ProfilePicture FROM User WHERE UserID = ?');
+    const user = userStmt.get(UserID);
+    if (user && user.ProfilePicture) {
+      try {
+        const filename = path.basename(user.ProfilePicture);
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch (e) {
+        console.error('Failed to remove profile image:', e);
+      }
+    }
+
+    // Delete the user row
+    const deleteUserStmt = db.prepare('DELETE FROM User WHERE UserID = ?');
+    const result = deleteUserStmt.run(UserID);
+
+    if (result.changes > 0) {
+      res.json({ message: 'User and messages deleted' });
+    } else {
+      res.status(404).json({ message: 'Bruker ikke funnet' });
+    }
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
