@@ -38,30 +38,10 @@ Jeg har tenk til å ha en chat side der folk har profil bilder, Kan sende meldin
 Multer er en node package som lar serveren lagre et bilde lokalt <br>
 Jeg bruker Multer i min app for å lagre brukere sine bilder som de sender i chatten og som de setter som profilbilde.
 
-Her så definerer man hvor filene skal bli sendt.
+Her så sier jeg at bildene skal være satt i buffer før de blir lastet opp i disken for at de ikke skal bli lagret på serveren før de er sjekket for filstørrelse.
 ```js
-const uploadDir = path.join(__dirname, 'public/Images');
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+const storage = multer.memoryStorage();
 ```
-
-Her så setter man lageret til den upload directory-et og setter filnavn
-```js
-// Configure multer with disk storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        // Create unique filename with original extension
-        const ext = path.extname(file.originalname);
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'Multer-Image-' + uniqueSuffix + ext);
-    }
-});
-```
-
 
 Her så setter man instillinger for hva som er låv til å uploades, en maks filstørrelse på 5mb og at det bare skal være bilder
 ```js
@@ -80,11 +60,46 @@ const upload = multer({
 });
 ```
 
+
+Her så definerer man hvor filene skal bli sendt.
+```js
+const uploadDir = path.join(__dirname, 'public/Images');
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+```
+
+Her så setter man lageret til den upload directory-et og setter filnavn
+I tillegg så bruker jeg Sharp (en annen node package) for å komprimere bildene.
+```js
+async function saveImageBuffer(buffer, originalname, opts = {}) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = `Multer-Image-${uniqueSuffix}.webp`;
+    const outPath = path.join(uploadDir, filename);
+
+    // Default resize width and quality, can be overridden via opts
+    const width = opts.width || 375;
+    const quality = typeof opts.quality === 'number' ? opts.quality : 50;
+
+    await sharp(buffer)
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality })
+      .toFile(outPath);
+
+    return filename;
+}
+```
+
+
+
+
 Her så lastes et bilde til lageret.
 
 Det blir gjort med å sette bilde i en formData og så med upload.single( ' [Navnet i formData-en] ' ) som en del av app.posten i app.js filen
 
-etter det så bruker jeg path packag-en til å få filstien for å sette den inn i databasen
+etter det så bruker jeg den forige funksjonen til å få filstien for å sette det inn i databasen.
 ```js
 
 //chat.js
@@ -99,7 +114,12 @@ app.post('/Channel/:ChannelID/Messages', upload.single('Image'), (req, res) => {
 
     //code.....
 
-    const ImagePath = req.file ? `/Images/${req.file.filename}` : null;
+    let ImagePath = null;
+    if (req.file) {
+        // Compress + save the uploaded image as WebP
+        const savedFilename = await saveImageBuffer(req.file.buffer, req.file.originalname, { width: 750, quality: 80 });
+        ImagePath = `/Images/${savedFilename}`;
+    }
 
     const stmt = db.prepare('INSERT INTO Messages (UserID, ChannelID, Content, ImagePath, Time) VALUES (?, ?, ?, ?, ?)');
     stmt.run(UserID, ChannelID, Content || null, ImagePath, Time);

@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const db = require('better-sqlite3')('chat.db');
 const multer = require('multer');
 const path = require('path');
+const sharp = require('sharp');
 
 const app = express();
 const PORT = 3000;
@@ -17,15 +18,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Configure multer with disk storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        // Create unique filename with original extension
-        const ext = path.extname(file.originalname);
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'Multer-Image-' + uniqueSuffix + ext);
-    }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage: storage,
@@ -40,6 +33,23 @@ const upload = multer({
         cb(null, true);
     }
 });
+
+async function saveImageBuffer(buffer, originalname, opts = {}) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = `Multer-Image-${uniqueSuffix}.webp`;
+    const outPath = path.join(uploadDir, filename);
+
+    // Default resize width and quality, can be overridden via opts
+    const width = opts.width || 375;
+    const quality = typeof opts.quality === 'number' ? opts.quality : 50;
+
+    await sharp(buffer)
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality })
+      .toFile(outPath);
+
+    return filename;
+}
 
 // Middleware for å parse JSON og URL-encoded data
 app.use(express.static("public"));
@@ -102,7 +112,8 @@ app.post("/registerUser", (req, res) => {
                 return res.status(400).json({ error: true, message: 'Profile picture is required' });
             }
 
-            const ProfilePicture = `/Images/${req.file.filename}`;
+            const savedFilename = await saveImageBuffer(req.file.buffer, req.file.originalname, { width: 400, quality: 80 });
+            const ProfilePicture = `/Images/${savedFilename}`;
             const saltRounds = 10;
             const hashPassword = await bcrypt.hash(Password, saltRounds);
 
@@ -172,28 +183,39 @@ app.get('/channel', (req, res) => {
   res.json(Channel);
 });
 
-app.post('/Channel/:ChannelID/Messages', upload.single('Image'), (req, res) => {
-    const UserID = req.session.User?.id; // Hent bruker-ID fra session
-    const { Content } = req.body; // Hent tekst fra forespørselen
-    const { ChannelID } = req.params;
-    let now = new Date();
-    let Time = now.getFullYear() + "-" +
-    String(now.getMonth() + 1).padStart(2, '0') + "-" +
-    String(now.getDate()).padStart(2, '0') + " " +
-    String(now.getHours()).padStart(2, '0') + ":" +
-    String(now.getMinutes()).padStart(2, '0') + ":" +
-    String(now.getSeconds()).padStart(2, '0');
+app.post('/Channel/:ChannelID/Messages', upload.single('Image'), async (req, res) => {
+    try {
+        const UserID = req.session.User?.id; // Hent bruker-ID fra session
+        const { Content } = req.body; // Hent tekst fra forespørselen
+        const { ChannelID } = req.params;
 
-  if (!UserID || !ChannelID || (!Content && !req.file)) {
-    return res.status(400).json({ message: "Manglende data for å sende melding" });
-  }
+        if (!UserID || !ChannelID || (!Content && !req.file)) {
+            return res.status(400).json({ message: "Manglende data for å sende melding" });
+        }
 
-  const ImagePath = req.file ? `/Images/${req.file.filename}` : null;
+        let ImagePath = null;
+        if (req.file) {
+            // Compress + save the uploaded image as WebP
+            const savedFilename = await saveImageBuffer(req.file.buffer, req.file.originalname, { width: 750, quality: 80 });
+            ImagePath = `/Images/${savedFilename}`;
+        }
 
-  const stmt = db.prepare('INSERT INTO Messages (UserID, ChannelID, Content, ImagePath, Time) VALUES (?, ?, ?, ?, ?)');
-  stmt.run(UserID, ChannelID, Content || null, ImagePath, Time);
+        let now = new Date();
+        let Time = now.getFullYear() + "-" +
+          String(now.getMonth() + 1).padStart(2, '0') + "-" +
+          String(now.getDate()).padStart(2, '0') + " " +
+          String(now.getHours()).padStart(2, '0') + ":" +
+          String(now.getMinutes()).padStart(2, '0') + ":" +
+          String(now.getSeconds()).padStart(2, '0');
 
-  res.sendStatus(200);
+        const stmt = db.prepare('INSERT INTO Messages (UserID, ChannelID, Content, ImagePath, Time) VALUES (?, ?, ?, ?, ?)');
+        stmt.run(UserID, ChannelID, Content || null, ImagePath, Time);
+
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('Message upload error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 app.get('/Channel/:ChannelID/Messages', (req, res) => {
