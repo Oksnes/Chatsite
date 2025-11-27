@@ -17,6 +17,7 @@ body {
 nav { grid-area: 1 / 1 / 2 / 5; }
 main { grid-area: 2 / 1 / 6 / 5; }
 #users {  grid-area: 2 / 5 / 6 / 6; }
+#updateUserDiv { grid-area: 1 / 5 / 2 / 6; }
 
 a {
     color: rgb(82, 118, 164);
@@ -100,6 +101,7 @@ label {
     border-radius: 5px;
     border:0px;
     background: rgb(51, 72, 94);
+    color: white;
 }
 
 #send-button {
@@ -162,6 +164,15 @@ label {
     margin: 0;
     width: 100%;
     box-sizing: border-box;
+}
+
+#updateUserDiv {
+    background: rgb(50, 45, 53);
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+    padding-bottom: 100px;
 }
 
 @media (max-width: 768px) {

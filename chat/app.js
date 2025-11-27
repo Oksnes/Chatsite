@@ -5,7 +5,8 @@ const db = require('better-sqlite3')('chat.db');
 const multer = require('multer');
 const path = require('path');
 const sharp = require('sharp');
-
+const { spawn, execFile } = require('child_process');
+const util = require('util');
 const app = express();
 const PORT = 3000;
 
@@ -33,7 +34,7 @@ const upload = multer({
         cb(null, true);
     }
 });
-
+const execFileAsync = util.promisify(execFile);
 async function saveImageBuffer(buffer, originalname, opts = {}) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(originalname || '').toLowerCase();
@@ -43,13 +44,69 @@ async function saveImageBuffer(buffer, originalname, opts = {}) {
     const quality = typeof opts.quality === 'number' ? opts.quality : 50;
 
 
-        // If original is GIF, save the buffer directly as .gif to preserve animation
-    if (ext === '.gif') {
-        const filename = `Multer-Image-${uniqueSuffix}.gif`;
-        const outPath = path.join(uploadDir, filename);
-        fs.writeFileSync(outPath, buffer);
-        return filename;
-    }
+// If original is GIF, try to optimize it using gifsicle (preserve animation)
+        if (ext === '.gif') {
+          const filename = `Multer-Image-${uniqueSuffix}.gif`;
+          const outPath = path.join(uploadDir, filename);
+          try {
+            const gifsiclePath = require('gifsicle');
+            const os = require('os');
+            const tmpdir = os.tmpdir();
+            const inTmp = path.join(tmpdir, `in-${uniqueSuffix}.gif`);
+            const optTmp = path.join(tmpdir, `opt-${uniqueSuffix}.gif`);
+            const lossyTmp = path.join(tmpdir, `lossy-${uniqueSuffix}.gif`);
+            // write input to temp file
+            fs.writeFileSync(inTmp, buffer);
+
+            // 1) Lossless optimize
+            try {
+              await execFileAsync(gifsiclePath, ['--optimize=3', '--output', optTmp, inTmp]);
+            } catch (e) {
+              // non-fatal, continue to try other options
+            }
+
+            // 2) Try a lossy pass (only if it helps later)
+            try {
+              // adjust --lossy value if you want stronger/weaker compression
+              await execFileAsync(gifsiclePath, ['--lossy=80', '--output', lossyTmp, inTmp]);
+            } catch (e) {
+              // ignore
+            }
+
+            const statSafe = (p) => {
+              try { return fs.existsSync(p) ? fs.statSync(p).size : Infinity; }
+              catch { return Infinity; }
+            };
+
+            const inSize = statSafe(inTmp);
+            const optSize = statSafe(optTmp);
+            const lossySize = statSafe(lossyTmp);
+
+            // pick the smallest valid file (prefer optimized over lossy if equal)
+            let chosenTmp = inTmp;
+            let chosenSize = inSize;
+            if (optSize < chosenSize) { chosenTmp = optTmp; chosenSize = optSize; }
+            if (lossySize < chosenSize) { chosenTmp = lossyTmp; chosenSize = lossySize; }
+
+            // If the chosen is the original (inTmp), just save original buffer; otherwise copy chosen tmp to outPath
+            if (chosenTmp === inTmp) {
+              fs.writeFileSync(outPath, buffer);
+            } else {
+              fs.copyFileSync(chosenTmp, outPath);
+            }
+
+            // cleanup temp files
+            [inTmp, optTmp, lossyTmp].forEach(f => { try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) {} });
+
+            return filename;
+          } catch (err) {
+            console.error('GIF optimization failed, saving original GIF:', err);
+            const filename = `Multer-Image-${uniqueSuffix}.gif`;
+            const outPath = path.join(uploadDir, filename);
+            fs.writeFileSync(outPath, buffer);
+            return filename;
+          }
+        }
 
     // Determine output format based on original extension/mimetype.
     // Keep jpeg/jpg, png and webp when possible; otherwise convert to webp.
@@ -70,8 +127,10 @@ async function saveImageBuffer(buffer, originalname, opts = {}) {
         // PNG doesn't use 'quality' the same way; use compressionLevel (0-9) derived from quality.
         const compressionLevel = Math.max(0, Math.min(9, Math.round((100 - quality) / 11)));
         transformer = transformer.png({ compressionLevel });
-    } else { // webp
+    } else if(format ==='webp'){ // webp
         transformer = transformer.webp({ quality });
+    } else {
+        transformer = transformer.gif({quality }); // Fallback, though GIFs are handled above
     }
 
     await transformer.toFile(outPath);
@@ -164,6 +223,83 @@ app.post("/registerUser", (req, res) => {
     });
 });
 
+app.get('/getCurrentUser', (req, res) => {
+  if (!req.session.User) {
+      return res.status(401).json({ message: "Not logged in" });
+  }
+
+  const UserID = req.session.User.id;
+  const stmt = db.prepare('SELECT UserID, Username, ProfilePicture, Admin FROM User WHERE UserID = ?');
+  const user = stmt.get(UserID);
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  req.session.User = { id: user.UserID, Username: user.Username, Admin: Number(user.Admin || 0) };
+
+  res.json({ 
+      success: true, 
+      user: { 
+          id: user.UserID,
+          username: user.Username,
+          profilePicture: user.ProfilePicture,
+          admin: Number(user.Admin || 0)
+      }
+  });
+});
+
+app.put('/updateUser', upload.single('ProfilePicture'), requireLogin, async (req, res) => {
+  const UserID = req.session.User?.id;
+  if (!UserID) {
+      return res.status(401).json({ message: "Not logged in" });
+  }
+
+  try {
+      const { Username, Password } = req.body;
+
+      // Fetch existing user to preserve values when not provided
+      const existing = db.prepare('SELECT Username, Password, ProfilePicture FROM User WHERE UserID = ?').get(UserID);
+      if (!existing) {
+          return res.status(404).json({ message: "User not found" });
+      }
+
+      const newUsername = (typeof Username === 'string' && Username.trim().length) ? Username.trim() : existing.Username;
+
+      // Handle profile picture (optional)
+      let newProfilePicture = existing.ProfilePicture;
+      if (req.file) {
+          const savedFilename = await saveImageBuffer(req.file.buffer, req.file.originalname, { width: 400, quality: 80 });
+          newProfilePicture = `/Images/${savedFilename}`;
+      }
+
+      // Handle password (optional)
+      let newPasswordHash = existing.Password;
+      if (typeof Password === 'string' && Password.length) {
+          const saltRounds = 10;
+          newPasswordHash = await bcrypt.hash(Password, saltRounds);
+      }
+
+      const result = db.prepare('UPDATE User SET Username = ?, Password = ?, ProfilePicture = ? WHERE UserID = ?')
+      .run(newUsername, newPasswordHash, newProfilePicture, UserID);
+
+      // Update session to reflect new username
+      req.session.User = { id: UserID, Username: newUsername, Admin: Number(req.session.User?.Admin || 0) };
+
+      res.json({
+        success: true,
+        message: "User updated successfully",
+        user: {
+          id: UserID,
+          username: newUsername,
+          profilePicture: newProfilePicture
+        }
+      });
+    } catch (error) {
+      console.error('Update user error:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // Rute for innlogging
 app.post ("/login", async (req, res) => {
   const { Username, Password } = req.body; //data fra login.html
@@ -182,6 +318,8 @@ app.post ("/login", async (req, res) => {
   req.session.User = { id: User.UserID, Username: User.Username, Admin: Number(User.Admin || 0) }; //gir sessionene din disse dataene
   res.json({ message: "Innlogging vellykket" });
 });
+
+
 
 // Rute for å logge ut
 app.post("/logout", (req, res) => { //DENNE KODEN BRUKER JEG IKKE NÅ

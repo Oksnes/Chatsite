@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="index.css">
+
+    <script>
+        async function UpdateUser(event) {
+            event.preventDefault();
+
+            const Username = document.getElementById("Username").value.trim();
+            const Password = document.getElementById("Password").value;
+            const ProfilePicture = document.getElementById("ProfilePicture").files[0];
+
+            const formData = new FormData();
+            if (Username) formData.append("Username", Username);
+            if (Password) formData.append("Password", Password);
+            if (ProfilePicture) formData.append("ProfilePicture", ProfilePicture);
+
+            const response = await fetch("/updateUser", {
+                method: "PUT",
+                body: formData
+            });
+
+            const result = await response.json().catch(()=>({ message: 'No JSON response' }));
+            alert(result.message || (response.ok ? 'Updated' : 'Failed'));
+            if (response.ok) {
+                // refresh displayed current profile or values
+                await loadUser();
+            }
+        }
+
+        async function loadUser() {
+            try {
+                const response = await fetch('/getCurrentUser');
+                if (!response.ok) return;
+                const data = await response.json();
+                const user = data.user;
+                if (!user) return;
+                document.getElementById("Username").value = user.username || '';
+                // Do not require password to update
+                document.getElementById("Password").value = '';
+                // show current profile image if present
+                const imgHolder = document.getElementById('currentProfile');
+                if (imgHolder) {
+                    if (user.profilePicture) {
+                        imgHolder.src = user.profilePicture;
+                        imgHolder.style.display = 'block';
+                    } else {
+                        imgHolder.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUser();
+        });
+    </script>
+</head>
+<body>
+    <main>
+        <h1>Update User!</h1>
+        <form onsubmit="UpdateUser(event)" autocomplete="off">
+            
+            <label for="Username">Username:</label>
+            <input type="text" id="Username" name="Username" required value=""><br>
+
+            <label for="Password">Password (leave blank to keep current):</label>
+            <input type="password" id="Password" name="Password"><br>
+
+            <label for="ProfilePicture">Profile Picture (optional):</label>
+            <input type="file" id="ProfilePicture" name="ProfilePicture" accept="image/*"><br>
+            <img id="currentProfile" src="" alt="Current profile" style="display:none; max-width:120px; margin:8px 0;"><br>
+
+            <button type="submit">Update user</button>
+        </form>
+    </main>
+</body>
+</html>
