@@ -83,3 +83,28 @@ button {
     margin-bottom: 10px;
     color:white;
 }
+
+@media screen and (max-width: 768px) {
+    main {
+        width: 90%;
+    }
+
+    nav {
+        height: 85%;
+    }
+
+    input{
+        width: 80%;
+        height: 20px;
+    }
+
+    input[type="file"]{
+        width: 80%;
+        height: 20px;
+    }
+
+    button {
+        width: 80%;
+        height: 20px;
+    }
+}

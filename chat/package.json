@@ -14,9 +14,10 @@
     "better-sqlite3": "^12.4.6",
     "express": "^5.1.0",
     "express-session": "^1.18.2",
+    "gifsicle": "^5.0.0",
     "multer": "^2.0.2",
     "path": "^0.12.7",
-    "sharp": "^0.34.5",
-    "gifsicle": "^5.0.0"
+    "pm2": "^6.0.14",
+    "sharp": "^0.34.5"
   }
 }
