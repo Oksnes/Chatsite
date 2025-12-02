@@ -60,6 +60,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadUser();
         });
+
+        async function logout() {
+            await fetch('/logout', { 
+                method: 'POST' 
+            });
+            window.location.href = '/';
+        }
     </script>
 </head>
 <body>
@@ -79,7 +86,8 @@
 
             <button type="submit">Update user</button>
         </form>
-        <p>Tilbake til <a href="/chat">chat</a></p>
+        <p>Back to <a href="/chat">chat</a></p>
+        <p><a onclick="logout()" id="logout">Logout</a></p>
     </main>
 </body>
 </html>
