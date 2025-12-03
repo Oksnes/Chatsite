@@ -28,6 +28,8 @@ nav {
     /* padding: 20px; */
     box-sizing: border-box;
     text-align: center;
+    /* ensure nav stays above other panels if needed */
+    z-index: 2;
 }
 
 main {
@@ -51,20 +53,25 @@ main {
 #chat-container {
     padding-top: 10px;
     width: 100%;
-    height: 100%;
-    max-height: 100%;
-    height: auto;
     margin: 0 auto;
+
+    /* make the chat container flexible so messages can expand */
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0; /* allow children to shrink inside flex containers */
 }
 
 #messages-container {
-    max-height: 90%;
-    height: 600px;
-    overflow-y:auto;
+    /* use flexible sizing instead of a fixed height */
+    flex: 1 1 auto;
+    min-height: 320px;
+    max-height: calc(100vh - 220px); /* leaves room for nav, inputs and margins on large screens */
+    overflow-y: auto;
     margin-bottom: 10px;
     text-align: left;
     padding-left: 10px;
-    overflow-anchor:none;
+    overflow-anchor: none;
     scrollbar-color: rgb(66, 93, 121) transparent;
 }
 
@@ -180,8 +187,9 @@ label {
 
 @media (max-width: 768px) {
     body {
+        /* let nav size to its content so it can grow instead of clipping into main */
         grid-template-columns: 1fr;
-        grid-template-rows: 50px auto auto auto;
+        grid-template-rows: auto auto 1fr auto; /* nav / main / users / update */
     }
 
     nav { grid-area: 1 / 1 / 2 / 2; }
@@ -189,12 +197,12 @@ label {
     #users { grid-area: 3 / 1 / 4 / 2; }
     #updateUserDiv { grid-area: 4 / 1 / 5 / 2; }
 
-    #channel-select {
-        width: 50%;
+    /* ensure the users panel has a usable minimum height on very small screens */
+    #users {
+        min-height: 200px;
     }
 
-    #users {
-        max-height: 600px;
-        height: 600px;
+    #channel-select {
+        width: 50%;
     }
 }
