@@ -14,7 +14,7 @@ Jeg har tenk til å ha en chat side der folk har profil bilder, Kan sende meldin
 |Username|TEXT|
 |Password|TEXT|
 |ProfilePicture|TEXT|
-|Admin|INT|  
+|Admin|INTEGER|  
 
 |Messages|Datatype|
 |--------|--------|
