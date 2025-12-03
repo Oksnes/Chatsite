@@ -34,108 +34,109 @@ const upload = multer({
         cb(null, true);
     }
 });
+
 const execFileAsync = util.promisify(execFile);
 async function saveImageBuffer(buffer, originalname, opts = {}) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(originalname || '').toLowerCase();
+  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+  const ext = path.extname(originalname || '').toLowerCase();
 
-    // Default resize width and quality, can be overridden via opts
-    const width = opts.width || 375;
-    const quality = typeof opts.quality === 'number' ? opts.quality : 50;
+  // Default resize width and quality, can be overridden via opts
+  const width = opts.width || 375;
+  const quality = typeof opts.quality === 'number' ? opts.quality : 50;
 
 
 // If original is GIF, try to optimize it using gifsicle (preserve animation)
-        if (ext === '.gif') {
-          const filename = `Multer-Image-${uniqueSuffix}.gif`;
-          const outPath = path.join(uploadDir, filename);
-          try {
-            const gifsiclePath = require('gifsicle');
-            const os = require('os');
-            const tmpdir = os.tmpdir();
-            const inTmp = path.join(tmpdir, `in-${uniqueSuffix}.gif`);
-            const optTmp = path.join(tmpdir, `opt-${uniqueSuffix}.gif`);
-            const lossyTmp = path.join(tmpdir, `lossy-${uniqueSuffix}.gif`);
-            // write input to temp file
-            fs.writeFileSync(inTmp, buffer);
-
-            // 1) Lossless optimize
-            try {
-              await execFileAsync(gifsiclePath, ['--optimize=3', '--output', optTmp, inTmp]);
-            } catch (e) {
-              // non-fatal, continue to try other options
-            }
-
-            // 2) Try a lossy pass (only if it helps later)
-            try {
-              // adjust --lossy value if you want stronger/weaker compression
-              await execFileAsync(gifsiclePath, ['--lossy=80', '--output', lossyTmp, inTmp]);
-            } catch (e) {
-              // ignore
-            }
-
-            const statSafe = (p) => {
-              try { return fs.existsSync(p) ? fs.statSync(p).size : Infinity; }
-              catch { return Infinity; }
-            };
-
-            const inSize = statSafe(inTmp);
-            const optSize = statSafe(optTmp);
-            const lossySize = statSafe(lossyTmp);
-
-            // pick the smallest valid file (prefer optimized over lossy if equal)
-            let chosenTmp = inTmp;
-            let chosenSize = inSize;
-            if (optSize < chosenSize) { chosenTmp = optTmp; chosenSize = optSize; }
-            if (lossySize < chosenSize) { chosenTmp = lossyTmp; chosenSize = lossySize; }
-
-            // If the chosen is the original (inTmp), just save original buffer; otherwise copy chosen tmp to outPath
-            if (chosenTmp === inTmp) {
-              fs.writeFileSync(outPath, buffer);
-            } else {
-              fs.copyFileSync(chosenTmp, outPath);
-            }
-
-            // cleanup temp files
-            [inTmp, optTmp, lossyTmp].forEach(f => { try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) {} });
-
-            return filename;
-          } catch (err) {
-            console.error('GIF optimization failed, saving original GIF:', err);
-            const filename = `Multer-Image-${uniqueSuffix}.gif`;
-            const outPath = path.join(uploadDir, filename);
-            fs.writeFileSync(outPath, buffer);
-            return filename;
-          }
-        }
-
-    // Determine output format based on original extension/mimetype.
-    // Keep jpeg/jpg, png and webp when possible; otherwise convert to webp.
-    let format = 'webp';
-    if (ext === '.jpg' || ext === '.jpeg') format = 'jpeg';
-    else if (ext === '.png') format = 'png';
-    else if (ext === '.webp') format = 'webp';
-
-    const outExt = format === 'jpeg' ? 'jpg' : format;
-    const filename = `Multer-Image-${uniqueSuffix}.${outExt}`;
+  if (ext === '.gif') {
+    const filename = `Multer-Image-${uniqueSuffix}.gif`;
     const outPath = path.join(uploadDir, filename);
+    try {
+      const gifsiclePath = require('gifsicle');
+      const os = require('os');
+      const tmpdir = os.tmpdir();
+      const inTmp = path.join(tmpdir, `in-${uniqueSuffix}.gif`);
+      const optTmp = path.join(tmpdir, `opt-${uniqueSuffix}.gif`);
+      const lossyTmp = path.join(tmpdir, `lossy-${uniqueSuffix}.gif`);
+      // write input to temp file
+      fs.writeFileSync(inTmp, buffer);
 
-    // Build transformer with resize and format-specific options
-    let transformer = sharp(buffer).resize({ width, withoutEnlargement: true });
-    if (format === 'jpeg') {
-        transformer = transformer.jpeg({ quality });
-    } else if (format === 'png') {
-        // PNG doesn't use 'quality' the same way; use compressionLevel (0-9) derived from quality.
-        const compressionLevel = Math.max(0, Math.min(9, Math.round((100 - quality) / 11)));
-        transformer = transformer.png({ compressionLevel });
-    } else if(format ==='webp'){ // webp
-        transformer = transformer.webp({ quality });
-    } else {
-        transformer = transformer.gif({quality }); // Fallback, though GIFs are handled above
+      // 1) Lossless optimize
+      try {
+        await execFileAsync(gifsiclePath, ['--optimize=3', '--output', optTmp, inTmp]);
+      } catch (e) {
+        // non-fatal, continue to try other options
+      }
+
+      // 2) Try a lossy pass (only if it helps later)
+      try {
+        // adjust --lossy value if you want stronger/weaker compression
+        await execFileAsync(gifsiclePath, ['--lossy=80', '--output', lossyTmp, inTmp]);
+      } catch (e) {
+        // ignore
+      }
+
+      const statSafe = (p) => {
+        try { return fs.existsSync(p) ? fs.statSync(p).size : Infinity; }
+        catch { return Infinity; }
+      };
+
+      const inSize = statSafe(inTmp);
+      const optSize = statSafe(optTmp);
+      const lossySize = statSafe(lossyTmp);
+
+      // pick the smallest valid file (prefer optimized over lossy if equal)
+      let chosenTmp = inTmp;
+      let chosenSize = inSize;
+      if (optSize < chosenSize) { chosenTmp = optTmp; chosenSize = optSize; }
+      if (lossySize < chosenSize) { chosenTmp = lossyTmp; chosenSize = lossySize; }
+
+      // If the chosen is the original (inTmp), just save original buffer; otherwise copy chosen tmp to outPath
+      if (chosenTmp === inTmp) {
+        fs.writeFileSync(outPath, buffer);
+      } else {
+        fs.copyFileSync(chosenTmp, outPath);
+      }
+
+      // cleanup temp files
+      [inTmp, optTmp, lossyTmp].forEach(f => { try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch (e) {} });
+
+      return filename;
+    } catch (err) {
+      console.error('GIF optimization failed, saving original GIF:', err);
+      const filename = `Multer-Image-${uniqueSuffix}.gif`;
+      const outPath = path.join(uploadDir, filename);
+      fs.writeFileSync(outPath, buffer);
+      return filename;
     }
+  }
 
-    await transformer.toFile(outPath);
+  // Determine output format based on original extension/mimetype.
+  // Keep jpeg/jpg, png and webp when possible; otherwise convert to webp.
+  let format = 'webp';
+  if (ext === '.jpg' || ext === '.jpeg') format = 'jpeg';
+  else if (ext === '.png') format = 'png';
+  else if (ext === '.webp') format = 'webp';
 
-    return filename;
+  const outExt = format === 'jpeg' ? 'jpg' : format;
+  const filename = `Multer-Image-${uniqueSuffix}.${outExt}`;
+  const outPath = path.join(uploadDir, filename);
+
+  // Build transformer with resize and format-specific options
+  let transformer = sharp(buffer).resize({ width, withoutEnlargement: true });
+  if (format === 'jpeg') {
+      transformer = transformer.jpeg({ quality });
+  } else if (format === 'png') {
+      // PNG doesn't use 'quality' the same way; use compressionLevel (0-9) derived from quality.
+      const compressionLevel = Math.max(0, Math.min(9, Math.round((100 - quality) / 11)));
+      transformer = transformer.png({ compressionLevel });
+  } else if(format ==='webp'){ // webp
+      transformer = transformer.webp({ quality });
+  } else {
+      transformer = transformer.gif({quality }); // Fallback, though GIFs are handled above
+  }
+
+  await transformer.toFile(outPath);
+
+  return filename;
 }
 
 // Middleware for å parse JSON og URL-encoded data

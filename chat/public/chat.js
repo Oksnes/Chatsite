@@ -96,7 +96,7 @@ document.getElementById('send-button').addEventListener('click', async (event) =
     event.preventDefault();
 
     const messageInput = document.getElementById('message-input');
-    const imageInput = document.getElementById('image-input'); // forventes <input type="file" id="image-input">
+    const imageInput = document.getElementById('image-input'); 
     const Content = messageInput.value.trim();
     const imageFile = imageInput.files && imageInput.files[0] ? imageInput.files[0] : null;
 
