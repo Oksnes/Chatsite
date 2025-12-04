@@ -1,12 +1,23 @@
 # DOKUMENTASJON
 
 
+## Navigation
+- [Database](#database)
+- [Multer](#multer)
+- [Express](#express)
+- [Registrering av bruker](#registrering-av-bruker)
+- [Kanaler og meldinger](#kanaler-og-meldinger)
+- [Slette brukere og meldinger](#hente-og-slette-brukere-meldinger-også)
 
+
+<br>
+<br>
+<br>
 
 ## Database
 Jeg har laget en database med 3 tabeller
 
-Jeg har tenk til å ha en chat side der folk har profil bilder, Kan sende meldinger med og uten bilder og kan snakke i flere forskjellige kanaler, denne databasen lar meg gjøre dette.
+Jeg har tenk til å ha en chat side der folk har profil bilder, Kan sende meldinger med og uten bilder og kan snakke i flere forskjellige kanaler, denne database strukturen lar meg gjøre dette.
 
 | User | Datatype |
 |-------|--------|
@@ -30,7 +41,9 @@ Jeg har tenk til å ha en chat side der folk har profil bilder, Kan sende meldin
 |ChannelID|INTEGER|
 |ChannelName|TEXT|
 
-
+<br>
+<br>
+<br>
 
 
 ## Multer
@@ -215,6 +228,10 @@ app.post('/Channel/:ChannelID/Messages', upload.single('Image'), (req, res) => {
 });
 ```
 
+<br>
+<br>
+<br>
+
 ## Express
 
 Her så setter jeg instillinger for Express og Express session. Jeg setter public mappen i første linje og i andre linje får jeg express til å håndtere JSON.
@@ -258,6 +275,9 @@ For å gi en bruker en session så har jeg denne linjen med kode i /login ruten
   // Lagre brukerdata i session
   req.session.User = { id: User.UserID, Username: User.Username, Admin: Number(User.Admin || 0) }; //gir sessionene din disse dataene
 ```
+<br>
+<br>
+<br>
 
 ## Registrering av bruker
 
@@ -376,6 +396,10 @@ app.put('/updateUser', upload.single('ProfilePicture'), requireLogin, async (req
 });
 ```
 
+<br>
+<br>
+<br>
+
 ## Kanaler og Meldinger
 
 Her er kode for å sende til riktig html fil basert på om brukeren har blitt satt som admin
@@ -413,7 +437,7 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   const { ChannelID } = req.params;
 
   const stmt = db.prepare(`
-    SELECT Messages.Content, Messages.ImagePath, User.Username, User.ProfilePicture, Messages.Time
+    SELECT Messages.MessageID, Messages.Content, Messages.ImagePath, User.Username, User.ProfilePicture, Messages.Time
     FROM Messages
     JOIN User ON Messages.UserID = User.UserID
     WHERE Messages.ChannelID = ?
@@ -570,6 +594,10 @@ document.getElementById('send-button').addEventListener('click', async (event) =
 });
 ```
 
+<br>
+<br>
+<br>
+
 ## Hente og slette brukere (meldinger også)
 
 Her er kode som henter alle brukerene
@@ -657,6 +685,7 @@ async function deleteUser(UserID) {
 
 Her er også hvordan brukerene blir vist på admin siden med en slette knapp ved siden av
 ```js
+//adminchat.js
 async function fetchUsers() {
     const response = await fetch('/getUsers');  
     const Users = await response.json();
@@ -697,5 +726,71 @@ async function fetchUsers() {
     userRow.append(profilePic, nameSpan, deleteButton);
     userList.appendChild(userRow);
     });
+}
+```
+
+Her er hvordan jeg har det for å slette individuelle meldinger 
+```js
+//app.js
+app.delete('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
+  const { MessageID } = req.params;
+
+  try {
+    // Delete image referenced by the message
+    const imagesStmt = db.prepare('SELECT ImagePath FROM Messages WHERE MessageID = ? AND ImagePath IS NOT NULL');
+    const images = imagesStmt.all(MessageID);
+    images.forEach(row => {
+      if (row && row.ImagePath) {
+        try {
+          const filename = path.basename(row.ImagePath);
+          const filePath = path.join(uploadDir, filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error('Failed to remove message image:', e);
+        }
+      }
+    });
+
+    const stmt = db.prepare('DELETE FROM Messages WHERE MessageID = ?');
+    const result = stmt.run(MessageID);
+
+    if (result.changes > 0) {
+      res.json({ message: 'Melding slettet' });
+    } else {
+      res.status(404).json({ message: 'Melding ikke funnet' });
+    }
+
+
+  } catch (error) {
+    console.error('Delete message image error:', error);
+    // continue to delete message record even if image deletion fails
+  }
+
+});
+
+
+
+//adminChat.js
+async function deleteMessage(MessageID) {
+  const confirmed = confirm('Er du sikker på at du vil slette denne meldingen?');
+  if (!confirmed) return;
+
+  try {
+
+    const response = await fetch(`/admin/deletemessage/${MessageID}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      alert('Melding slettet');
+      fetchMessages(currentChannelID);
+    } else {
+      const result = await response.json();
+      alert(result.message);
+    }
+  } catch (error) {
+    console.error('Feil ved sletting av melding:', error);
+    alert('En feil oppstod ved sletting av meldingen.');
+  }
 }
 ```
