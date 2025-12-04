@@ -22,6 +22,7 @@ async function fetchChannels() {
 async function fetchMessages(currentChannelID, scroll = false) { //scroll parameter to decide whether to scroll down after fetching
     const response = await fetch(`/Channel/${currentChannelID}/Messages`);
     const messages = await response.json();
+    console.log(messages);
     const messagesContainer = document.getElementById('messages-container');
     messagesContainer.innerHTML = ''; // Tøm tidligere meldinger
 
@@ -51,6 +52,18 @@ async function fetchMessages(currentChannelID, scroll = false) { //scroll parame
             messageDiv.append(messageContent);
             messageDiv.style.overflowWrap = 'break-word';
         }
+
+        const deleteButton = document.createElement('button');
+        deleteButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" height="40px" viewBox="0 -960 960 960" width="24px" fill="#ffffffff"><path d="M267.33-120q-27.5 0-47.08-19.58-19.58-19.59-19.58-47.09V-740H160v-66.67h192V-840h256v33.33h192V-740h-40.67v553.33q0 27-19.83 46.84Q719.67-120 692.67-120H267.33Zm425.34-620H267.33v553.33h425.34V-740Zm-328 469.33h66.66v-386h-66.66v386Zm164 0h66.66v-386h-66.66v386ZM267.33-740v553.33V-740Z"/></svg>';
+        deleteButton.style.marginLeft = '15px';
+        deleteButton.style.backgroundColor = '#ff4d4d';
+        deleteButton.style.border = 'none';
+        deleteButton.style.borderRadius = '8px';
+        deleteButton.style.cursor = 'pointer';
+        deleteButton.style.float = 'right';
+        
+        deleteButton.addEventListener('click', () => deleteMessage(msg.MessageID));
+        messageDiv.appendChild(deleteButton);
 
         const timeStamp = document.createElement('div');
         timeStamp.textContent = msg.Time;
@@ -173,6 +186,29 @@ async function deleteUser(UserID) {
   } else {
     const result = await response.json();
     alert(result.message);
+  }
+}
+
+async function deleteMessage(MessageID) {
+  const confirmed = confirm('Er du sikker på at du vil slette denne meldingen?');
+  if (!confirmed) return;
+
+  try {
+
+    const response = await fetch(`/admin/deletemessage/${MessageID}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      alert('Melding slettet');
+      fetchMessages(currentChannelID);
+    } else {
+      const result = await response.json();
+      alert(result.message);
+    }
+  } catch (error) {
+    console.error('Feil ved sletting av melding:', error);
+    alert('En feil oppstod ved sletting av meldingen.');
   }
 }
 

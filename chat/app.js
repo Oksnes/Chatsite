@@ -389,7 +389,7 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   const { ChannelID } = req.params;
 
   const stmt = db.prepare(`
-    SELECT Messages.Content, Messages.ImagePath, User.Username, User.ProfilePicture, Messages.Time
+    SELECT Messages.MessageID, Messages.Content, Messages.ImagePath, User.Username, User.ProfilePicture, Messages.Time
     FROM Messages
     JOIN User ON Messages.UserID = User.UserID
     WHERE Messages.ChannelID = ?
@@ -397,6 +397,42 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   const Messages = stmt.all(ChannelID);
 
   res.json(Messages);
+});
+
+app.delete('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
+  const { MessageID } = req.params;
+
+  try {
+    // Delete image referenced by the message
+    const imagesStmt = db.prepare('SELECT ImagePath FROM Messages WHERE MessageID = ? AND ImagePath IS NOT NULL');
+    const images = imagesStmt.all(MessageID);
+    images.forEach(row => {
+      if (row && row.ImagePath) {
+        try {
+          const filename = path.basename(row.ImagePath);
+          const filePath = path.join(uploadDir, filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error('Failed to remove message image:', e);
+        }
+      }
+    });
+
+    const stmt = db.prepare('DELETE FROM Messages WHERE MessageID = ?');
+    const result = stmt.run(MessageID);
+
+    if (result.changes > 0) {
+      res.json({ message: 'Melding slettet' });
+    } else {
+      res.status(404).json({ message: 'Melding ikke funnet' });
+    }
+
+
+  } catch (error) {
+    console.error('Delete message image error:', error);
+    // continue to delete message record even if image deletion fails
+  }
+
 });
 
 app.get('/getUsers', (req, res) => {
