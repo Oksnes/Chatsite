@@ -9,7 +9,6 @@
 - [Kanaler og meldinger](#kanaler-og-meldinger)
 - [Slette brukere og meldinger](#hente-og-slette-brukere-meldinger-også)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/2bsGNazvN4U?si=Hg1WwN9VVNecSR_W" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 <br>
 <br>
@@ -430,6 +429,10 @@ app.get('/channel', (req, res) => {
   res.json(Channel);
 });
 ```
+
+Du kan enten se denne videoen eller lese det under ned til linje 532
+https://youtu.be/rDzPA1bl2Mo <br>
+
 
 Her er kode for å hente ut alle meldingene fra en spesifik kanal, den bruker en kolon ":" for å kunne spesifisere kanal id-en
 

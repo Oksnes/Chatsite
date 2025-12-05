@@ -22,7 +22,6 @@ async function fetchChannels() {
 async function fetchMessages(currentChannelID, scroll = false) { //scroll parameter to decide whether to scroll down after fetching
     const response = await fetch(`/Channel/${currentChannelID}/Messages`);
     const messages = await response.json();
-    console.log(messages);
     const messagesContainer = document.getElementById('messages-container');
     messagesContainer.innerHTML = ''; // Tøm tidligere meldinger
 
