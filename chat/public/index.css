@@ -18,6 +18,7 @@ main {
     text-align: center;
     filter: drop-shadow(10px 10px rgb(72, 62, 76));
     border-radius: 5%;
+    corner-shape: squircle;
     font-family:Verdana, Geneva, Tahoma, sans-serif;
     padding: 25px;
 }

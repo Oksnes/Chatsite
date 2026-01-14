@@ -138,7 +138,7 @@ async function fetchUsers() {
     userList.style.gap = '6px';
 
     Users.forEach(User => {
-
+    if (User.UserID === 17) return; // Skip the default deleted user
     const userRow = document.createElement('div');
     userRow.style.display = 'flex';
     userRow.style.alignItems = 'center';
@@ -195,7 +195,7 @@ async function deleteMessage(MessageID) {
   try {
 
     const response = await fetch(`/admin/deletemessage/${MessageID}`, {
-      method: 'DELETE'
+      method: 'PUT'
     });
 
     if (response.ok) {

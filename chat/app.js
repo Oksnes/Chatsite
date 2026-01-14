@@ -399,7 +399,7 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   res.json(Messages);
 });
 
-app.delete('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
+app.put('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
   const { MessageID } = req.params;
 
   try {
@@ -418,8 +418,8 @@ app.delete('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
       }
     });
 
-    const stmt = db.prepare('DELETE FROM Messages WHERE MessageID = ?');
-    const result = stmt.run(MessageID);
+    const stmt = db.prepare('UPDATE Messages SET Content = ?, ImagePath = ? WHERE MessageID = ?');
+    const result = stmt.run("This Message Was Deleted.", "", MessageID);
 
     if (result.changes > 0) {
       res.json({ message: 'Melding slettet' });
@@ -461,8 +461,8 @@ app.delete('/admin/deleteUsers/:UserID', (req, res) => {
     });
 
     // Delete the user's messages
-    const deleteMessagesStmt = db.prepare('DELETE FROM Messages WHERE UserID = ?');
-    deleteMessagesStmt.run(UserID);
+    const deleteMessagesStmt = db.prepare('UPDATE Messages SET Content = ?, ImagePath = ?, UserID = ? WHERE UserID = ?');
+    deleteMessagesStmt.run("This Message Was Deleted.", "", 17, UserID);
 
     // Delete the user's profile picture (if any)
     const userStmt = db.prepare('SELECT ProfilePicture FROM User WHERE UserID = ?');
