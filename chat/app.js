@@ -330,6 +330,9 @@ app.post("/logout", (req, res) => { //DENNE KODEN BRUKER JEG IKKE NÅ
 
 // Rute for å vise chat.html eller admin (kun for innlogga brukarar)
 app.get("/chat", requireLogin,(req, res) => { 
+  if (!req.session.User) {
+    return res.redirect("/login.html"); // Hvis brukeren ikke er logget inn, send dem til login-siden
+  }
   if (Number(req.session.User?.Admin) === 1) {
     res.sendFile(__dirname + "/secure/admin.html"); // Hvis brukeren er admin, send dem til admin-siden
   } else {
