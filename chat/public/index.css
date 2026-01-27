@@ -8,19 +8,22 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgb(61, 52, 65);
+    background: rgb(113, 53, 77);
 }
 
 main {
-    height: 80%;
-    width: 50%;
-    background: rgb(88, 77, 91);
+    margin-left: 100px;
+    height: 60%;
+    width: 30%;
+    background: rgb(155, 81, 112);
     text-align: center;
     filter: drop-shadow(10px 10px rgb(72, 62, 76));
     border-radius: 5%;
     corner-shape: squircle;
-    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    font-family: 'Roboto', monospace;
     padding: 25px;
+    align-content: center;
+    font-size: larger;
 }
 
 #header {
@@ -30,16 +33,16 @@ main {
 
 a {
     color: rgb(82, 118, 164);
+    text-decoration: none;
 }
 
 nav {
-    height: 80%;
     display: flex;
     /* justify-content: center; */
     flex-direction: column-reverse;
     /* align-items: center; */
     justify-content: end;
-    
+    font-size: xx-large;
 } 
 
 form {
@@ -113,4 +116,23 @@ button {
         width: 80%;
         height: 20px;
     }
+}
+
+#logo {
+    animation: swingAnimation 40s infinite;
+    filter: drop-shadow(10px 10px 10px rgb(21, 20, 20));
+}
+
+@keyframes swingAnimation {
+    0% { transform: rotate(0deg); }
+    10% { transform: rotate(5deg); }
+    20% { transform: rotate(0deg); }
+    30% { transform: rotate(5deg); }
+    40% { transform: rotate(0deg); }
+    50% { transform: rotate(5deg); }
+    60% { transform: rotate(0deg); }
+    70% { transform: rotate(5deg); }
+    80% { transform: rotate(0deg); }
+    90% { transform: rotate(5deg); }
+    100% { transform: rotate(0deg); }
 }
