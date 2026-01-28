@@ -6,14 +6,16 @@ html, body {
 
 body {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     background: rgb(113, 53, 77);
 }
 
 main {
-    margin-left: 100px;
-    height: 60%;
+    margin-left: 0;
+    /* margin-top: 20px; */
+    height: 50%;
     width: 30%;
     background: rgb(155, 81, 112);
     text-align: center;
@@ -57,12 +59,12 @@ input{
     background: rgb(128, 102, 145);
     border: 2px solid rgb(65, 65, 65);
     border-radius:5px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     color:white;
 }
 
 input[type="file"] {
-    width: 30%;
+    width: 50%;
     padding: 5px;
     cursor: pointer;
 }
@@ -119,7 +121,10 @@ button {
 }
 
 #logo {
+    margin-top: 20px;
+    margin-bottom: 10px;
     animation: swingAnimation 40s infinite;
+    animation: logoFloat 6s ease-in-out infinite;
     filter: drop-shadow(10px 10px 10px rgb(21, 20, 20));
 }
 
@@ -135,4 +140,10 @@ button {
     80% { transform: rotate(0deg); }
     90% { transform: rotate(5deg); }
     100% { transform: rotate(0deg); }
+}
+
+@keyframes logoFloat {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); }
+    50%  { transform: translateY(-10px) rotate(2.5deg) scale(1.01); }
+    100% { transform: translateY(0) rotate(0deg) scale(1); }
 }
