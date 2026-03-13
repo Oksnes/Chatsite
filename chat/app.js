@@ -151,14 +151,14 @@ app.use(session({
   cookie: { secure: false } // Sett til true hvis du bruker HTTPS
 }));
 
-function requireLogin(req, res, next) {
+function requireLogin(req, res, next) { //ting med ruten requireLogin krever at du er logget inn for å få tilgang
   if (!req.session.User) { //Se om bruker er logget inn
       return res.redirect("/login.html"); //send til login siden hvis du ikke er logget inn
   }
   next();
 }
 
-function requireAdmin(req, res, next) {
+function requireAdmin(req, res, next) { //ting med ruten requireAdmin krever at du er admin for å få tilgang
   if (!req.session.User || Number(req.session.User.Admin) !== 1) {
       return res.status(403).send("Access denied. Admins only.");
   }
@@ -402,7 +402,7 @@ app.get('/Channel/:ChannelID/Messages', (req, res) => {
   res.json(Messages);
 });
 
-app.put('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => {
+app.put('/admin/deletemessage/:MessageID', requireAdmin, (req, res) => { 
   const { MessageID } = req.params;
 
   try {
